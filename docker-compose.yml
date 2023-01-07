@@ -1,0 +1,64 @@
+version: '3'
+#Inicia os servicos: WebAPI, BD, Portainer, Jenkins e Sonarcube
+#WEBAPI
+services:
+  web:
+    build: .
+    ports:
+      - "8050:8050"
+  mymap:
+   build: 
+    context: .
+    dockerfile: Dockerfile
+  isep.api.payments:
+   image: ${DOCKER_REGISTRY-}isepapipayments
+#BASE DE DADOS
+  db:
+    image: mcr.microsoft.com/mssql/server
+    ports:
+      - "1433:1433"
+    environment:
+        SA_PASSOwRD: "Password123!"
+        ACCEPT_EULA: �Y�
+        JDBC_CONNECTION_STRING: "conec��o" 
+#PORTAINER
+  version: "3"
+  services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    ports:
+      - 9000:9000
+    volumes:
+        - data:/data
+        - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+volumes:
+  data:
+#JENKINS
+  jenkins:
+    image: jenkins/jenkins:lts
+    privileged: true
+    user: root
+    ports:
+        - 8080:8080
+    container_name: jenkins
+    volumes:
+          - /home/${myname}/jenkins_compose/jenkins_configuration:/var/jenkins_home
+          - /var/run/docker.sock:/var/run/docker.sock
+#SONARCUBE
+  version: "3"
+  services:
+  SonarQube:
+    image: SonarQube:community
+    depends_on:
+      - db
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://db:5432/sonar
+      SONAR_JDBC_USERNAME: sonartest
+      SONAR_JDBC_PASSWORD: sonartest
+    volumes:
+      - SonarQube_data:/opt/SonarQube/data
+      - SonarQube_extensions:/opt/SonarQube/extensions
+      - SonarQube_logs:/opt/SonarQube/logs
+    ports:
+      - "9001:9001"
